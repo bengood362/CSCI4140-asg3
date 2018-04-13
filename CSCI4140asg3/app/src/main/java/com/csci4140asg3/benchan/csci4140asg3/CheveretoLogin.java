@@ -22,7 +22,13 @@ import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
+import android.webkit.ValueCallback;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -32,6 +38,8 @@ import android.widget.TextView;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.widget.ViewSwitcher;
+import android.view.inputmethod.InputMethodManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,6 +73,12 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
     private EditText mPasswordView;
     private View mProgressView;
     private View mLoginFormView;
+    private View mScrollView;
+    private ViewSwitcher viewSwitcher;
+
+    private WebView webview;
+    int login_try;
+    private String targetUrl = "http://10.0.2.2:8080"; // NOTE!
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,8 +108,74 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
             }
         });
 
+        viewSwitcher = (ViewSwitcher) findViewById(R.id.viewSwitcher);
+        Animation slide_in_left = AnimationUtils.loadAnimation(this, android.R.anim.slide_in_left);
+        Animation slide_out_right = AnimationUtils.loadAnimation(this, android.R.anim.slide_out_right);
+        viewSwitcher.setInAnimation(slide_in_left);
+        viewSwitcher.setOutAnimation(slide_out_right);
+
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
+
+        mScrollView = findViewById(R.id.login_form);
+
+        webview = findViewById(R.id.chevereto_webview_main);
+
+        WebSettings webSettings = webview.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setDatabaseEnabled(true);
+        webSettings.setMinimumFontSize(1);
+        webSettings.setMinimumLogicalFontSize(1);
+        webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+//        setContentView(webview);
+        WebViewClient webviewClient = new WebViewClient(){
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                if(login_try<3){
+                    login_try++;
+                    String username = mEmailView.getText().toString();
+                    String password = mPasswordView.getText().toString();
+                    CheveretoLogin.this.login(username, password);
+                }
+            }
+        };
+        webview.setWebViewClient(webviewClient);
+    }
+
+    protected void login(String username, String password){
+        String form_action = "login";
+        String js = "    (function(){ return 1})();"+
+            "    var form = document.createElement(\"form\");"+
+            "   var auth_token = document.getElementsByName(\"auth_token\")[0].value"+
+            "    var element1 = document.createElement(\"input\"); "+
+            "    var element2 = document.createElement(\"input\");  "+
+            "    var element3 = document.createElement(\"input\");  "+
+            "    var element4 = document.createElement(\"input\");  "+
+            "    form.method = \"POST\";"+
+            "    form.action = \""+(form_action)+"\";   "+
+            "    element1.value=\""+username+"\";"+
+            "    element1.name=\"login-subject\";"+
+            "    form.appendChild(element1);  "+
+            "    element2.value=\""+password+"\";"+
+            "    element2.name=\"password\";"+
+            "    form.appendChild(element2);"+
+            "    element3.value=auth_token;"+
+            "    element3.name=\"auth_token\";"+
+            "    form.appendChild(element3);"+
+            "    element4.value=\""+username+"\";"+
+            "    element4.name=\"email\";"+
+            "    form.appendChild(element4);  "+
+            "    document.body.appendChild(form);"+
+            "    form.submit();"+
+            "    (function(){ return 1})();";
+        webview.evaluateJavascript(js, new ValueCallback<String>() {
+            @Override
+            public void onReceiveValue(String value) {
+//                alert("onReceiveValue", value);
+            }
+        });
     }
 
     private void populateAutoComplete() {
@@ -330,22 +410,22 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         }
 
         protected void finish() {
-            Intent k = new Intent(CheveretoLogin.this, CheveretoWebview.class);
             String username = mEmailView.getText().toString();
             String password = mPasswordView.getText().toString();
-            k.putExtra("username",username);
-            k.putExtra("password",password  );
-            startActivity(k);
+            InputMethodManager imm = (InputMethodManager)getSystemService(CheveretoLogin.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+            viewSwitcher.setDisplayedChild(1);
+            webview.loadUrl(targetUrl);
         }
 
-        protected void alert(String message){
+        protected void alert(String title, String message){
             AlertDialog.Builder builder;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 builder = new AlertDialog.Builder(CheveretoLogin.this, android.R.style.Theme_Material_Dialog_Alert);
             } else {
                 builder = new AlertDialog.Builder(CheveretoLogin.this);
             }
-            builder.setTitle(message)
+            builder.setTitle(title)
                 .setMessage(message)
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
