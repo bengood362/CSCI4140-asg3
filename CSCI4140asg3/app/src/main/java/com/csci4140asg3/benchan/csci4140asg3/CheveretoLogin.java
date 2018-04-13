@@ -27,7 +27,9 @@ import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
+import android.webkit.ConsoleMessage;
 import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -86,13 +88,41 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
     Boolean menuState=false;
     private String targetUrl = "http://10.0.2.2:8080"; // NOTE!
 
+    protected void alert(String title, String message){
+        AlertDialog.Builder builder;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            builder = new AlertDialog.Builder(CheveretoLogin.this, android.R.style.Theme_Material_Dialog_Alert);
+        } else {
+            builder = new AlertDialog.Builder(CheveretoLogin.this);
+        }
+        builder.setTitle(title)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // continue with delete
+                    }
+                })
+                .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // do nothing
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
+    }
+
     private void removeRedundant() {
         String js = "var uploadIcons = document.getElementsByClassName(\"icon icon-cloud-upload\"); "+
             "var menuIcons = document.getElementsByClassName(\"icon icon-menu3\"); "+
-            "var sideMenuUploadButton = document.getElementsByClassName(\"pop-btn\")[0];" +
+            "var sideMenuButtonsHTMLCollection = document.getElementsByClassName(\"pop-btn\"); "+
+            "var sideMenuUploadButtons = [].slice.call(sideMenuButtonsHTMLCollection); " +
+//            "var sideMenuUploadButton = sideMenuButtons.filter(elem => (function(x){ return x===\"pop-btn\"}))[0]; " +
+//            "var sideMenuUploadButton = sideMenuButtons[9]; "+
+//            "alert(sideMenuButtonsHTMLCollection); alert(sideMenuButtons); alert(sideMenuUploadButton); "+
             "for(i=0;i<uploadIcons.length;i++){ uploadIcons[i].parentNode.removeChild(uploadIcons[i]) }"+
             "for(i=0;i<menuIcons.length;i++){ menuIcons[i].parentNode.removeChild(menuIcons[i]) }"+
-            "sideMenuUploadButton[0].parentNode.removeChild(sideMenuUploadButton[0]); ";
+            "for(i=0;i<sideMenuUploadButtons.length;i++){ if(sideMenuUploadButtons[i].dataset.action === \"top-bar-upload\"){ sideMenuUploadButtons[i].parentNode.removeChild(sideMenuUploadButtons[i]);; break; } }";
+        android.util.Log.d("JS", js);
         webview.evaluateJavascript("javascript:"+js, null);
     }
 
@@ -206,7 +236,15 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
                 }
             }
         };
+        WebChromeClient webchromeClient = new WebChromeClient(){
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage consoleMessage){
+                android.util.Log.d("WebView", consoleMessage.message());
+                return true;
+            }
+        };
         webview.setWebViewClient(webviewClient);
+        webview.setWebChromeClient(webchromeClient);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
     }
@@ -237,6 +275,7 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
             "    document.body.appendChild(form);"+
             "    form.submit();"+
             "    (function(){ return 1})();";
+        android.util.Log.d("JS", js);
         webview.evaluateJavascript(js, new ValueCallback<String>() {
             @Override
             public void onReceiveValue(String value) {
@@ -486,29 +525,6 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
             webview.loadUrl(targetUrl);
             // TODO: if you loadUrl then found that the response's header does not have location,
             // TODO: then your auth is wrong
-        }
-
-        protected void alert(String title, String message){
-            AlertDialog.Builder builder;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                builder = new AlertDialog.Builder(CheveretoLogin.this, android.R.style.Theme_Material_Dialog_Alert);
-            } else {
-                builder = new AlertDialog.Builder(CheveretoLogin.this);
-            }
-            builder.setTitle(title)
-                .setMessage(message)
-                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        // continue with delete
-                    }
-                })
-                .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        // do nothing
-                    }
-                })
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .show();
         }
 
         @Override
