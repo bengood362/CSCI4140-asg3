@@ -31,6 +31,7 @@ import android.widget.TextView;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +53,7 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
      * TODO: remove after connecting to a real authentication system.
      */
     private static final String[] DUMMY_CREDENTIALS = new String[]{
-            "foo@example.com:hello", "bar@example.com:world"
+            "foo@example.com:hello", "bar@example.com:world", "bengood362:awc852"
     };
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
@@ -194,13 +195,11 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
     }
 
     private boolean isEmailValid(String email) {
-        //TODO: Replace this with your own logic
-        return email.contains("@");
+        return true;
     }
 
     private boolean isPasswordValid(String password) {
-        //TODO: Replace this with your own logic
-        return password.length() > 4;
+        return true;
     }
 
     /**
@@ -330,8 +329,13 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
             return true;
         }
 
-        protected void finish(){
-            this.alert("Finished");
+        protected void finish() {
+            Intent k = new Intent(CheveretoLogin.this, CheveretoWebview.class);
+            String username = mEmailView.getText().toString();
+            String password = mPasswordView.getText().toString();
+            k.putExtra("username",username);
+            k.putExtra("password",password  );
+            startActivity(k);
         }
 
         protected void alert(String message){
