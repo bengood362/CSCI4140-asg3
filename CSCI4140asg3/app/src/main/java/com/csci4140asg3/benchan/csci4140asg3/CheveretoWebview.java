@@ -79,27 +79,28 @@ public class CheveretoWebview extends AppCompatActivity {
         String form_action = "login";
         String js = "    (function(){ return 1})();"+
             "    var form = document.createElement(\"form\");"+
-            "    var element1 = document.createElement(\"input\"); "+
-            "    var element2 = document.createElement(\"input\");  "+
-            "    var element3 = document.createElement(\"input\");  "+
-            "    var element4 = document.createElement(\"input\");  "+
-            "    form.method = \"POST\";"+
-            "    form.action = \""+(form_action)+"\";   "+
-            "    element1.value=\""+username+"\";"+
-            "    element1.name=\"login-subject\";"+
-            "    form.appendChild(element1);  "+
-            "    element2.value=\""+password+"\";"+
-            "    element2.name=\"password\";"+
-            "    form.appendChild(element2);"+
-            "    element3.value=\""+"fbf7be61fc2d5b8462902943d42ab669f902541a"+"\";"+
-            "    element3.name=\"auth_token\";"+
-            "    form.appendChild(element3);"+
-            "    element4.value=\""+username+"\";"+
-            "    element4.name=\"email\";"+
-            "    form.appendChild(element4);  "+
-            "    document.body.appendChild(form);"+
-            "    form.submit();"+
-            "    (function(){ return 1})();";
+                "   var auth_token = document.getElementsByName(\"auth_token\")[0].value"+
+                "    var element1 = document.createElement(\"input\"); "+
+                "    var element2 = document.createElement(\"input\");  "+
+                "    var element3 = document.createElement(\"input\");  "+
+                "    var element4 = document.createElement(\"input\");  "+
+                "    form.method = \"POST\";"+
+                "    form.action = \""+(form_action)+"\";   "+
+                "    element1.value=\""+username+"\";"+
+                "    element1.name=\"login-subject\";"+
+                "    form.appendChild(element1);  "+
+                "    element2.value=\""+password+"\";"+
+                "    element2.name=\"password\";"+
+                "    form.appendChild(element2);"+
+                "    element3.value=auth_token;"+
+                "    element3.name=\"auth_token\";"+
+                "    form.appendChild(element3);"+
+                "    element4.value=\""+username+"\";"+
+                "    element4.name=\"email\";"+
+                "    form.appendChild(element4);  "+
+                "    document.body.appendChild(form);"+
+                "    form.submit();"+
+                "    (function(){ return 1})();";
         webview.evaluateJavascript(js, new ValueCallback<String>() {
             @Override
             public void onReceiveValue(String value) {
