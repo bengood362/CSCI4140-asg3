@@ -41,6 +41,7 @@ import android.content.Intent;
 import android.widget.ViewSwitcher;
 import android.view.inputmethod.InputMethodManager;
 
+import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,7 +79,32 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
 
     private WebView webview;
     int login_try;
+    Boolean menuState=false;
     private String targetUrl = "http://10.0.2.2:8080"; // NOTE!
+
+    private void removeRedundant() {
+        String js = "var uploadIcons = document.getElementsByClassName(\"icon icon-cloud-upload\"); "+
+            "var menuIcons = document.getElementsByClassName(\"icon icon-menu3\"); "+
+            "var sideMenuUploadButton = document.getElementsByClassName(\"pop-btn\")[0];" +
+            "for(i=0;i<uploadIcons.length;i++){ uploadIcons[i].parentNode.removeChild(uploadIcons[i]) }"+
+            "for(i=0;i<menuIcons.length;i++){ menuIcons[i].parentNode.removeChild(menuIcons[i]) }"+
+            "sideMenuUploadButton[0].parentNode.removeChild(sideMenuUploadButton[0]); ";
+        webview.evaluateJavascript("javascript:"+js, null);
+    }
+
+    private void toggleMenu(){
+        if(menuState){
+            String js = "PF.fn.topMenu.hide();";
+            webview.evaluateJavascript("javascript:"+js, null);
+        }else{
+            String js = "PF.fn.topMenu.show();";
+            webview.evaluateJavascript("javascript:"+js, null);
+        }
+    }
+
+    private void upload(){
+        // TODO: upload function
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -133,6 +159,8 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                CheveretoLogin.this.removeRedundant();
+                // TODO check login failure
                 if(login_try<3){
                     login_try++;
                     String username = mEmailView.getText().toString();
@@ -389,6 +417,7 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         @Override
         protected Boolean doInBackground(Void... params) {
             // TODO: attempt authentication against a network service.
+            // TODO: cookie management here
 
             try {
                 // Simulate network access.
@@ -416,6 +445,8 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
             imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
             viewSwitcher.setDisplayedChild(1);
             webview.loadUrl(targetUrl);
+            // TODO: if you loadUrl then found that the response's header does not have location,
+            // TODO: then your auth is wrong
         }
 
         protected void alert(String title, String message){
