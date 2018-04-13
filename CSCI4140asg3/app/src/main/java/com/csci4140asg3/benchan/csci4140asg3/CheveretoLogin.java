@@ -20,6 +20,8 @@ import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.animation.Animation;
@@ -40,6 +42,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.widget.ViewSwitcher;
 import android.view.inputmethod.InputMethodManager;
+import android.support.v7.widget.Toolbar;
 
 import java.lang.annotation.Target;
 import java.util.ArrayList;
@@ -64,6 +67,7 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
     private static final String[] DUMMY_CREDENTIALS = new String[]{
             "foo@example.com:hello", "bar@example.com:world", "bengood362:awc852"
     };
+
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
@@ -100,10 +104,39 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
             String js = "PF.fn.topMenu.show();";
             webview.evaluateJavascript("javascript:"+js, null);
         }
+        menuState=!menuState;
     }
 
-    private void upload(){
+    private void startUpload(){
         // TODO: upload function
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.toolbar, menu);
+        menu.findItem(R.id.upload).setEnabled(false);
+        menu.findItem(R.id.menu).setEnabled(false);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item){
+        switch (item.getItemId()) {
+            case R.id.upload:
+                startUpload();
+                return true;
+
+            case R.id.menu:
+                toggleMenu();
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
+        }
     }
 
     @Override
@@ -159,6 +192,10 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                Toolbar toolbar = findViewById(R.id.toolbar);
+                Menu menu = toolbar.getMenu();
+                menu.findItem(R.id.upload).setEnabled(true);
+                menu.findItem(R.id.menu).setEnabled(true);
                 CheveretoLogin.this.removeRedundant();
                 // TODO check login failure
                 if(login_try<3){
@@ -170,6 +207,8 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
             }
         };
         webview.setWebViewClient(webviewClient);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
     }
 
     protected void login(String username, String password){
