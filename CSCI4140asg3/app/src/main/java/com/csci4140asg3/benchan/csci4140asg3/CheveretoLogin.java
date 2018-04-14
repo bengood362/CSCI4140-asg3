@@ -84,9 +84,8 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
     private ViewSwitcher viewSwitcher;
 
     private WebView webview;
-    int login_try;
     Boolean menuState=false;
-    private String targetUrl = "http://10.0.2.2:8080"; // NOTE!
+    private String targetUrl = "http://10.0.2.2:8080/"; // NOTE wrong url
 
     protected void alert(String title, String message){
         AlertDialog.Builder builder;
@@ -122,7 +121,7 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
             "for(i=0;i<uploadIcons.length;i++){ uploadIcons[i].parentNode.removeChild(uploadIcons[i]) }"+
             "for(i=0;i<menuIcons.length;i++){ menuIcons[i].parentNode.removeChild(menuIcons[i]) }"+
             "for(i=0;i<sideMenuUploadButtons.length;i++){ if(sideMenuUploadButtons[i].dataset.action === \"top-bar-upload\"){ sideMenuUploadButtons[i].parentNode.removeChild(sideMenuUploadButtons[i]);; break; } }";
-        android.util.Log.d("JS", js);
+        android.util.Log.d("BC123123 removeRedundant JS", js);
         webview.evaluateJavascript("javascript:"+js, null);
     }
 
@@ -222,24 +221,31 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                /* Add toolbar icons */
                 Toolbar toolbar = findViewById(R.id.toolbar);
                 Menu menu = toolbar.getMenu();
                 menu.findItem(R.id.upload).setEnabled(true);
                 menu.findItem(R.id.menu).setEnabled(true);
-                CheveretoLogin.this.removeRedundant();
-                // TODO check login failure
-                if(login_try<3){
-                    login_try++;
+
+                android.util.Log.d("BC123123 WebsiteURL",url);
+                if(url.equals(targetUrl)){ // Main page
+                    /* remove redundants */
+                    CheveretoLogin.this.removeRedundant();
+                    /* try login */
                     String username = mEmailView.getText().toString();
                     String password = mPasswordView.getText().toString();
                     CheveretoLogin.this.login(username, password);
+                }else if(url.contains("login")){ // Login failed
+                    CheveretoLogin.this.loginFailed();
+                }else if(url.contains("logout")){ // Logout
+                    // TODO: logout and remove "cookie"
                 }
             }
         };
         WebChromeClient webchromeClient = new WebChromeClient(){
             @Override
             public boolean onConsoleMessage(ConsoleMessage consoleMessage){
-                android.util.Log.d("WebView", consoleMessage.message());
+                android.util.Log.d("BC123123 WebView", consoleMessage.message());
                 return true;
             }
         };
@@ -249,11 +255,33 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         setSupportActionBar(toolbar);
     }
 
+    protected void loginFailed(){
+        viewSwitcher.setDisplayedChild(0);
+        mPasswordView.setError(getString(R.string.error_incorrect_password));
+        mPasswordView.requestFocus();
+    }
+
+    // Whenever submit login request and will call this function, given that network is good
+    protected void finished(){
+        String username = mEmailView.getText().toString();
+        String password = mPasswordView.getText().toString();
+        InputMethodManager imm = (InputMethodManager)getSystemService(CheveretoLogin.INPUT_METHOD_SERVICE);
+        try {
+            imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0); // NOTE BUGGED?
+        } catch(Exception e){
+
+        }
+        viewSwitcher.setDisplayedChild(1);
+        webview.loadUrl(targetUrl);
+        // TODO: if you loadUrl then found that the response's header does not have location,
+        // TODO: then your auth is wrong
+    }
+
     protected void login(String username, String password){
         String form_action = "login";
         String js = "    (function(){ return 1})();"+
             "    var form = document.createElement(\"form\");"+
-            "   var auth_token = document.getElementsByName(\"auth_token\")[0].value"+
+            "   var auth_token = document.getElementsByName(\"auth_token\")[0].value; "+
             "    var element1 = document.createElement(\"input\"); "+
             "    var element2 = document.createElement(\"input\");  "+
             "    var element3 = document.createElement(\"input\");  "+
@@ -275,11 +303,11 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
             "    document.body.appendChild(form);"+
             "    form.submit();"+
             "    (function(){ return 1})();";
-        android.util.Log.d("JS", js);
+        android.util.Log.d("BC123123 login JS", js);
         webview.evaluateJavascript(js, new ValueCallback<String>() {
             @Override
             public void onReceiveValue(String value) {
-//                alert("onReceiveValue", value);
+                android.util.Log.d("BC123123 login onReceiveValue", value);
             }
         });
     }
@@ -497,34 +525,11 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
             // TODO: attempt authentication against a network service.
             // TODO: cookie management here
 
-            try {
-                // Simulate network access.
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                return false;
-            }
-
-            for (String credential : DUMMY_CREDENTIALS) {
-                String[] pieces = credential.split(":");
-                if (pieces[0].equals(mEmail)) {
-                    // Account exists, return true if the password matches.
-                    return pieces[1].equals(mPassword);
-                }
-            }
-
-            // TODO: register the new account here.
             return true;
         }
 
         protected void finish() {
-            String username = mEmailView.getText().toString();
-            String password = mPasswordView.getText().toString();
-            InputMethodManager imm = (InputMethodManager)getSystemService(CheveretoLogin.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
-            viewSwitcher.setDisplayedChild(1);
-            webview.loadUrl(targetUrl);
-            // TODO: if you loadUrl then found that the response's header does not have location,
-            // TODO: then your auth is wrong
+            CheveretoLogin.this.finished();
         }
 
         @Override
