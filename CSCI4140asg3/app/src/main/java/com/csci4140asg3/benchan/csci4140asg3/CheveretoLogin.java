@@ -91,7 +91,7 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
 
     private WebView webview;
     Boolean menuState=false;
-    private String targetUrl = "http://10.0.2.2:8080/"; // NOTE wrong url
+    private String targetUrl = "http://10.0.2.2/"; // NOTE wrong url
     private ValueCallback<Uri[]> mUploadMessage;
     private ValueCallback<Uri> mUploadMessageOld;
     
