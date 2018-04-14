@@ -45,6 +45,8 @@ import android.content.Intent;
 import android.widget.ViewSwitcher;
 import android.view.inputmethod.InputMethodManager;
 import android.support.v7.widget.Toolbar;
+import android.content.SharedPreferences;
+import android.content.Context;
 
 import java.lang.annotation.Target;
 import java.util.ArrayList;
@@ -173,11 +175,21 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
     }
 
     protected void clearCookies(){
-
+        Context context = CheveretoLogin.this;
+        SharedPreferences sharedPref = CheveretoLogin.this.getSharedPreferences(getString(R.string.cookie), context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString(getString(R.string.cookie_password), "");
+        editor.putString(getString(R.string.cookie_username), "");
+        editor.commit();
     }
 
     protected void saveCookies(String username, String password){
-
+        Context context = CheveretoLogin.this;
+        SharedPreferences sharedPref = CheveretoLogin.this.getSharedPreferences(getString(R.string.cookie), context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString(getString(R.string.cookie_password), username);
+        editor.putString(getString(R.string.cookie_username), password);
+        editor.commit();
     }
 
     @Override
@@ -216,11 +228,10 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
-
         mScrollView = findViewById(R.id.login_form);
-
         webview = findViewById(R.id.chevereto_webview_main);
 
+        /* webview */
         WebSettings webSettings = webview.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
@@ -272,22 +283,34 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         };
         webview.setWebViewClient(webviewClient);
         webview.setWebChromeClient(webchromeClient);
+        /* toolbar */
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        /* cookie management */
+        Context context = CheveretoLogin.this;
+        SharedPreferences sharedPref = CheveretoLogin.this.getSharedPreferences(getString(R.string.cookie), context.MODE_PRIVATE);
+        String username = sharedPref.getString(getString(R.string.cookie_username), "");
+        String password = sharedPref.getString(getString(R.string.cookie_username), "");
+        if (!username.isEmpty() && !password.isEmpty()){
+            mAuthTask = new UserLoginTask(username, password);
+            mAuthTask.execute((Void) null);
+        }
     }
 
     protected void loginFailed(){
         viewSwitcher.setDisplayedChild(0);
         mPasswordView.setError(getString(R.string.error_incorrect_password));
         mPasswordView.requestFocus();
+        this.clearCookies();
     }
 
     // Whenever submit login request and will call this function, given that network is good
     protected void finished(){
         String username = mEmailView.getText().toString();
         String password = mPasswordView.getText().toString();
-        InputMethodManager imm = (InputMethodManager)getSystemService(CheveretoLogin.INPUT_METHOD_SERVICE);
+        this.saveCookies(username, password);
         try {
+            InputMethodManager imm = (InputMethodManager)getSystemService(CheveretoLogin.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0); // NOTE BUGGED?
         } catch(Exception e){
 

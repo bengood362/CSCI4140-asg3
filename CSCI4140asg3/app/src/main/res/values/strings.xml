@@ -16,4 +16,7 @@
     <string name="menu">Menu</string>
     <string name="upload">upload</string>
     <string name="username">%s</string>
+    <string name="cookie">cookie</string>
+    <string name="cookie_username">username</string>
+    <string name="cookie_password">password</string>
 </resources>
