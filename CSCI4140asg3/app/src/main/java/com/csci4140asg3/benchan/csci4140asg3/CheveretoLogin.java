@@ -168,6 +168,18 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         }
     }
 
+    protected void logout(){
+        viewSwitcher.setDisplayedChild(0);
+    }
+
+    protected void clearCookies(){
+
+    }
+
+    protected void saveCookies(String username, String password){
+
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -227,17 +239,26 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
                 menu.findItem(R.id.upload).setEnabled(true);
                 menu.findItem(R.id.menu).setEnabled(true);
 
+                /* account creds */
+                String username = mEmailView.getText().toString();
+                String password = mPasswordView.getText().toString();
                 android.util.Log.d("BC123123 WebsiteURL",url);
                 if(url.equals(targetUrl)){ // Main page
                     /* remove redundants */
                     CheveretoLogin.this.removeRedundant();
-                    /* try login */
-                    String username = mEmailView.getText().toString();
-                    String password = mPasswordView.getText().toString();
-                    CheveretoLogin.this.login(username, password);
+                    if(!username.isEmpty() && !password.isEmpty()){
+                        /* try login with given usename and pasword*/
+                        CheveretoLogin.this.login(username, password);
+                        mEmailView.setText("");
+                        mPasswordView.setText("");
+                    }else{ // just logged-in
+
+                    }
                 }else if(url.contains("login")){ // Login failed
                     CheveretoLogin.this.loginFailed();
                 }else if(url.contains("logout")){ // Logout
+                    CheveretoLogin.this.logout();
+                    CheveretoLogin.this.clearCookies();
                     // TODO: logout and remove "cookie"
                 }
             }
