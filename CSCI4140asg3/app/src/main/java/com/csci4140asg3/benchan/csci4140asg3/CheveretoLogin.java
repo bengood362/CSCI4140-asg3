@@ -88,6 +88,7 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
     private WebView webview;
     Boolean menuState=false;
     private String targetUrl = "http://10.0.2.2:8080/"; // NOTE wrong url
+    private ValueCallback<Uri> mUploadMessage;
 
     protected void alert(String title, String message){
         AlertDialog.Builder builder;
@@ -138,9 +139,33 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         menuState=!menuState;
     }
 
+    private static final int PICKFILE_REQUEST_CODE=4097;
     private void startUpload(){
-        // TODO: upload function
-    }
+        mUploadMessage = new ValueCallback<Uri>(){
+            @Override
+            public void onReceiveValue(Uri value) {
+                android.util.Log.d("BC123123 URI", value.toString());
+            }
+        };
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        startActivityForResult(intent, PICKFILE_REQUEST_CODE);
+    } 
+
+    @Override  
+    protected void onActivityResult(int requestCode, int resultCode,  
+    Intent intent) {  
+        if(requestCode==PICKFILE_REQUEST_CODE)  {  
+            if(resultCode==RESULT_OK){
+                Uri result = intent == null || resultCode != RESULT_OK ? null  
+                : intent.getData();  
+                mUploadMessage.onReceiveValue(result);  
+                mUploadMessage = null;  
+            }else{
+
+            }
+        }
+    }  
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -280,6 +305,32 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
                 android.util.Log.d("BC123123 WebView", consoleMessage.message());
                 return true;
             }
+            // public boolean onShowFileChooser(
+            //     WebView webView, ValueCallback<Uri[]> filePathCallback,
+            //     FileChooserParams fileChooserParams) {
+            //     String acceptTypes[] = fileChooserParams.getAcceptTypes();
+            //     String acceptType = "";
+            //     for (int i = 0; i < acceptTypes.length; ++ i) {
+            //         if (acceptTypes[i] != null && acceptTypes[i].length() != 0)
+            //             acceptType += acceptTypes[i] + ";";
+            //     }
+            //     if (acceptType.length() == 0)
+            //         acceptType = "*/*";
+            //     final ValueCallback<Uri[]> finalFilePathCallback = filePathCallback;
+            //     ValueCallback<Uri> vc = new ValueCallback<Uri>() {
+            //         @Override
+            //         public void onReceiveValue(Uri value) {
+            //             Uri[] result;
+            //             if (value != null)
+            //                 result = new Uri[]{value};
+            //             else
+            //                 result = null;
+            //             finalFilePathCallback.onReceiveValue(result);
+            //         }
+            //     };
+            //     openFileChooser(vc, acceptType, "filesystem");
+            //     return true;
+            // }
         };
         webview.setWebViewClient(webviewClient);
         webview.setWebChromeClient(webchromeClient);
