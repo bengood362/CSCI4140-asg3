@@ -173,6 +173,7 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         getMenuInflater().inflate(R.menu.toolbar, menu);
         menu.findItem(R.id.upload).setEnabled(false);
         menu.findItem(R.id.menu).setEnabled(false);
+        // menu.setTitle()
         return true;
     }
 
@@ -215,6 +216,13 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         editor.putString(getString(R.string.cookie_password), username);
         editor.putString(getString(R.string.cookie_username), password);
         editor.commit();
+    }
+
+    private void disableMenu(){
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        Menu menu = toolbar.getMenu();
+        menu.findItem(R.id.upload).setEnabled(false);
+        menu.findItem(R.id.menu).setEnabled(false);
     }
 
     @Override
@@ -279,9 +287,12 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
                 String username = mEmailView.getText().toString();
                 String password = mPasswordView.getText().toString();
                 android.util.Log.d("BC123123 WebsiteURL",url);
+                /* remove redundants */
+                CheveretoLogin.this.removeRedundant();
                 if(url.equals(targetUrl)){ // Main page
-                    /* remove redundants */
-                    CheveretoLogin.this.removeRedundant();
+                    if(!username.isEmpty()){
+                        toolbar.setTitle(username);
+                    }
                     if(!username.isEmpty() && !password.isEmpty()){
                         /* try login with given usename and pasword*/
                         CheveretoLogin.this.login(username, password);
@@ -291,11 +302,14 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
 
                     }
                 }else if(url.contains("login")){ // Login failed
+                    toolbar.setTitle("CSCI4140asg3");
                     CheveretoLogin.this.loginFailed();
+                    CheveretoLogin.this.disableMenu();
                 }else if(url.contains("logout")){ // Logout
+                    toolbar.setTitle("CSCI4140asg3");
                     CheveretoLogin.this.logout();
                     CheveretoLogin.this.clearCookies();
-                    // TODO: logout and remove "cookie"
+                    CheveretoLogin.this.disableMenu();
                 }
             }
         };
