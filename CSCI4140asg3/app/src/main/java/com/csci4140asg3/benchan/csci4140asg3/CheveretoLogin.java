@@ -173,7 +173,6 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         getMenuInflater().inflate(R.menu.toolbar, menu);
         menu.findItem(R.id.upload).setEnabled(false);
         menu.findItem(R.id.menu).setEnabled(false);
-        // menu.setTitle()
         return true;
     }
 
@@ -213,8 +212,8 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         Context context = CheveretoLogin.this;
         SharedPreferences sharedPref = CheveretoLogin.this.getSharedPreferences(getString(R.string.cookie), context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putString(getString(R.string.cookie_password), username);
-        editor.putString(getString(R.string.cookie_username), password);
+        editor.putString(getString(R.string.cookie_password), password);
+        editor.putString(getString(R.string.cookie_username), username);
         editor.commit();
     }
 
@@ -287,12 +286,14 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
                 String username = mEmailView.getText().toString();
                 String password = mPasswordView.getText().toString();
                 android.util.Log.d("BC123123 WebsiteURL",url);
+                android.util.Log.d("BC123123 username", username);
                 /* remove redundants */
                 CheveretoLogin.this.removeRedundant();
                 if(url.equals(targetUrl)){ // Main page
-                    if(!username.isEmpty()){
-                        toolbar.setTitle(username);
-                    }
+                    Context context = CheveretoLogin.this;
+                    SharedPreferences sharedPref = CheveretoLogin.this.getSharedPreferences(getString(R.string.cookie), context.MODE_PRIVATE);
+                    String cookie_username = sharedPref.getString(getString(R.string.cookie_username), "");
+                    toolbar.setTitle(cookie_username);
                     if(!username.isEmpty() && !password.isEmpty()){
                         /* try login with given usename and pasword*/
                         CheveretoLogin.this.login(username, password);
@@ -302,10 +303,13 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
 
                     }
                 }else if(url.contains("login")){ // Login failed
+                    android.util.Log.d("BC123123 auth", "login failed");
                     toolbar.setTitle("CSCI4140asg3");
                     CheveretoLogin.this.loginFailed();
+                    CheveretoLogin.this.clearCookies();
                     CheveretoLogin.this.disableMenu();
                 }else if(url.contains("logout")){ // Logout
+                    android.util.Log.d("BC123123 auth", "logout");
                     toolbar.setTitle("CSCI4140asg3");
                     CheveretoLogin.this.logout();
                     CheveretoLogin.this.clearCookies();
@@ -355,8 +359,10 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         Context context = CheveretoLogin.this;
         SharedPreferences sharedPref = CheveretoLogin.this.getSharedPreferences(getString(R.string.cookie), context.MODE_PRIVATE);
         String username = sharedPref.getString(getString(R.string.cookie_username), "");
-        String password = sharedPref.getString(getString(R.string.cookie_username), "");
+        String password = sharedPref.getString(getString(R.string.cookie_password), "");
         if (!username.isEmpty() && !password.isEmpty()){
+            mEmailView.setText(username);
+            mPasswordView.setText(password);
             mAuthTask = new UserLoginTask(username, password);
             mAuthTask.execute((Void) null);
         }
@@ -366,7 +372,6 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         viewSwitcher.setDisplayedChild(0);
         mPasswordView.setError(getString(R.string.error_incorrect_password));
         mPasswordView.requestFocus();
-        this.clearCookies();
     }
 
     // Whenever submit login request and will call this function, given that network is good
