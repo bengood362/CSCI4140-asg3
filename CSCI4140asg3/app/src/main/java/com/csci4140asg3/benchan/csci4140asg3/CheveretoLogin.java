@@ -47,6 +47,10 @@ import android.view.inputmethod.InputMethodManager;
 import android.support.v7.widget.Toolbar;
 import android.content.SharedPreferences;
 import android.content.Context;
+import java.io.InputStream;
+import java.io.File;
+import java.util.Base64;
+import android.content.ClipData;
 
 import java.lang.annotation.Target;
 import java.util.ArrayList;
@@ -88,8 +92,9 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
     private WebView webview;
     Boolean menuState=false;
     private String targetUrl = "http://10.0.2.2:8080/"; // NOTE wrong url
-    private ValueCallback<Uri> mUploadMessage;
-
+    private ValueCallback<Uri[]> mUploadMessage;
+    private ValueCallback<Uri> mUploadMessageOld;
+    
     protected void alert(String title, String message){
         AlertDialog.Builder builder;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -139,31 +144,55 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         menuState=!menuState;
     }
 
+    private void onClickedUpload(){
+        String js = "click_event=document.createEvent('HTMLEvents');"+
+        "click_event.initEvent('click',true,true);"+
+        "document.querySelectorAll(\"a.btn.btn-big.green\")[0].dispatchEvent(click_event);";
+        android.util.Log.d("BC123123 JS onClickedUpload", js);
+        webview.loadUrl("javascript:"+js);
+    }
+
     private static final int PICKFILE_REQUEST_CODE=4097;
     private void startUpload(){
-        mUploadMessage = new ValueCallback<Uri>(){
-            @Override
-            public void onReceiveValue(Uri value) {
-                android.util.Log.d("BC123123 URI", value.toString());
-            }
-        };
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         startActivityForResult(intent, PICKFILE_REQUEST_CODE);
     } 
 
     @Override  
+    // Assume it is android 6.0, so only consider file uploader >5.0 case
     protected void onActivityResult(int requestCode, int resultCode,  
     Intent intent) {  
-        if(requestCode==PICKFILE_REQUEST_CODE)  {  
-            if(resultCode==RESULT_OK){
-                Uri result = intent == null || resultCode != RESULT_OK ? null  
-                : intent.getData();  
-                mUploadMessage.onReceiveValue(result);  
-                mUploadMessage = null;  
-            }else{
-
+        super.onActivityResult(requestCode, resultCode, intent);
+        if (mUploadMessageOld != null){
+            Uri result = intent.getData();
+            mUploadMessageOld.onReceiveValue(result);
+            mUploadMessageOld = null;
+        }else if(mUploadMessage != null){
+            if(requestCode==PICKFILE_REQUEST_CODE) {
+                Uri[] results = null;
+                if(resultCode==RESULT_OK){
+                    if(!(intent == null || resultCode != RESULT_OK)){
+                        Uri result = intent.getData();
+                        String dataString = intent.getDataString();
+                        ClipData clipData = intent.getClipData();
+                        if(clipData != null){
+                            results = new Uri[clipData.getItemCount()];
+                            for (int i = 0; i < clipData.getItemCount(); i++) {
+                                ClipData.Item item = clipData.getItemAt(i);
+                                results[i] = item.getUri();
+                            }
+                        }
+                        if (dataString != null){
+                            results = new Uri[]{Uri.parse(dataString)};
+                        }
+                    }
+                }
+                mUploadMessage.onReceiveValue(results);  
+                mUploadMessage = null;
             }
+        }else{
+            return;
         }
     }  
 
@@ -180,7 +209,7 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
     public boolean onOptionsItemSelected(MenuItem item){
         switch (item.getItemId()) {
             case R.id.upload:
-                startUpload();
+                onClickedUpload();
                 return true;
 
             case R.id.menu:
@@ -271,6 +300,12 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
         webSettings.setMinimumFontSize(1);
         webSettings.setMinimumLogicalFontSize(1);
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+        webSettings.setSaveFormData(true);
+        webSettings.setAllowContentAccess(true);
+        webSettings.setAllowFileAccess(true);
+        webSettings.setAllowFileAccessFromFileURLs(true);
+        webSettings.setAllowUniversalAccessFromFileURLs(true);
+        webSettings.setSupportZoom(true);
 //        setContentView(webview);
         WebViewClient webviewClient = new WebViewClient(){
             @Override
@@ -323,35 +358,33 @@ public class CheveretoLogin extends AppCompatActivity implements LoaderCallbacks
                 android.util.Log.d("BC123123 WebView", consoleMessage.message());
                 return true;
             }
-            // public boolean onShowFileChooser(
-            //     WebView webView, ValueCallback<Uri[]> filePathCallback,
-            //     FileChooserParams fileChooserParams) {
-            //     String acceptTypes[] = fileChooserParams.getAcceptTypes();
-            //     String acceptType = "";
-            //     for (int i = 0; i < acceptTypes.length; ++ i) {
-            //         if (acceptTypes[i] != null && acceptTypes[i].length() != 0)
-            //             acceptType += acceptTypes[i] + ";";
-            //     }
-            //     if (acceptType.length() == 0)
-            //         acceptType = "*/*";
-            //     final ValueCallback<Uri[]> finalFilePathCallback = filePathCallback;
-            //     ValueCallback<Uri> vc = new ValueCallback<Uri>() {
-            //         @Override
-            //         public void onReceiveValue(Uri value) {
-            //             Uri[] result;
-            //             if (value != null)
-            //                 result = new Uri[]{value};
-            //             else
-            //                 result = null;
-            //             finalFilePathCallback.onReceiveValue(result);
-            //         }
-            //     };
-            //     openFileChooser(vc, acceptType, "filesystem");
-            //     return true;
-            // }
+            // For Android < 3.0
+            public void openFileChooser(ValueCallback<Uri> valueCallback) {
+                mUploadMessageOld = valueCallback;
+                startUpload();
+            }
+
+            // For Android  >= 3.0
+            public void openFileChooser(ValueCallback valueCallback, String acceptType) {
+                mUploadMessageOld = valueCallback;
+                startUpload();
+            }
+
+            //For Android  >= 4.1
+            public void openFileChooser(ValueCallback<Uri> valueCallback, String acceptType, String capture) {
+                mUploadMessageOld = valueCallback;
+                startUpload();
+            }
+
+            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
+                mUploadMessage = filePathCallback;
+                CheveretoLogin.this.startUpload();
+                return true;
+            }
         };
         webview.setWebViewClient(webviewClient);
         webview.setWebChromeClient(webchromeClient);
+        webview.setClickable(true);
         /* toolbar */
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
